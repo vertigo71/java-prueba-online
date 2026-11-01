@@ -18,9 +18,10 @@ import java.util.concurrent.locks.*;
 
 public class ReadersWriters {
 
-    public static final int NUM_PEOPLE = 10;
+    public static final int NUM_READERS = 10;
+    public static final int NUM_WRITERS = 4;
 
-    int recursoCompartido = 0;
+    private int recursoCompartido = 0;
 
     private final ReadWriteLock rw = new ReentrantReadWriteLock(true);
 
@@ -48,12 +49,12 @@ public class ReadersWriters {
         }
     }
 
-    public static void main(String args[]) {
+    public static void main(String args[]) throws InterruptedException {
         ReadersWriters rw = new ReadersWriters();
-        Thread[] people = new Thread[NUM_PEOPLE];
+        Thread[] people = new Thread[NUM_READERS + NUM_WRITERS];
 
-        for (int i = 0; i < NUM_PEOPLE; i++) {
-            final boolean isWriter = (ThreadLocalRandom.current().nextInt(10_001) % 5 == 0);
+        for (int i = 0; i < NUM_READERS + NUM_WRITERS; i++) {
+            final boolean isWriter = (i < NUM_WRITERS);
             people[i] = new Thread(() -> {
                 try {
                     if (isWriter) {
@@ -68,5 +69,11 @@ public class ReadersWriters {
             }, (isWriter ? "WRITER-" + i : "READER-" + i));
         }
 
+        for (Thread thread : people) {
+            thread.start();
+        }
+        for (Thread thread : people) {
+            thread.join();
+        }
     }
 }
