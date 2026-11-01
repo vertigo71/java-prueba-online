@@ -13,51 +13,60 @@ Impedir que, cuando una hebra escritora está accediendo al entero, ninguna otra
 ninguno de los dos tipos) acceda al entero
 */
 
+import java.util.concurrent.ThreadLocalRandom;
 import java.util.concurrent.locks.*;
 
 public class ReadersWriters {
+
+    public static final int NUM_PEOPLE = 10;
+
     int recursoCompartido = 0;
-    boolean isWriter;
-    static final int numPeople = 10;
+
     private final ReadWriteLock rw = new ReentrantReadWriteLock(true);
-    
-    ReadersWriters( boolean isWriter) {
-        this.isWriter = isWriter;
-    }
-    
+
     public int leer() throws InterruptedException {
         rw.readLock().lock();
         try {
-            System.out.println(Thread.currentThread().getName() + " empieza a leer");
+            System.out.println(Thread.currentThread().getName() + " empieza a leer: " + recursoCompartido);
             Thread.sleep(200); // a propósito, para ver que varios leen a la vez
-			System.out.println(Thread.currentThread().getName() + " termina de leer");
-			return recursoCompartido;
+            System.out.println(Thread.currentThread().getName() + " termina de leer: " + recursoCompartido);
+            return recursoCompartido;
         } finally {
             rw.readLock().unlock();
         }
     }
-    public void escribir( int num ) throws InterruptedException {
+
+    public void escribir(int num) throws InterruptedException {
         rw.writeLock().lock();
-		try {
-			System.out.println(Thread.currentThread().getName() + " empieza a escribir");
-			Thread.sleep(200);
-			recursoCompartido = num;
-			System.out.println(Thread.currentThread().getName() + " termina de escribir");
-		} finally {
-			rw.writeLock().unlock();
-		}
+        try {
+            System.out.println(Thread.currentThread().getName() + " empieza a escribir: " + num);
+            Thread.sleep(200);
+            recursoCompartido = num;
+            System.out.println(Thread.currentThread().getName() + " termina de escribir: " + num);
+        } finally {
+            rw.writeLock().unlock();
+        }
     }
-    
-      public static void main(String args[]) {
-          ReadersWriters rw = new ReadersWriters();
-          Thread people = new Thread [numPeople];
-          
-          for (int i = 0; i < numPeople ; i++ ){
-              boolean isWriter = ( ThreadLocalRandom.current().nextInt(10_001) % 5  == 0 );
-              people [i] = new Thread ( () -> {
-                  
-                  }, ( isWriter ? "WRITER-" + i ; "READER-"+i ));
-          }
-        
-      }
+
+    public static void main(String args[]) {
+        ReadersWriters rw = new ReadersWriters();
+        Thread[] people = new Thread[NUM_PEOPLE];
+
+        for (int i = 0; i < NUM_PEOPLE; i++) {
+            final boolean isWriter = (ThreadLocalRandom.current().nextInt(10_001) % 5 == 0);
+            people[i] = new Thread(() -> {
+                try {
+                    if (isWriter) {
+                        rw.escribir(ThreadLocalRandom.current().nextInt(10_001));
+                    } else {
+                        rw.leer();
+                    }
+                } catch (InterruptedException e) {
+                    Thread.currentThread().interrupt();
+                }
+
+            }, (isWriter ? "WRITER-" + i : "READER-" + i));
+        }
+
+    }
 }
