@@ -51,9 +51,10 @@ public class ReadersWriters {
 
     public static void main(String args[]) throws InterruptedException {
         ReadersWriters rw = new ReadersWriters();
-        Thread[] people = new Thread[NUM_READERS + NUM_WRITERS];
+        final int NUM_TOTAL = NUM_READERS + NUM_WRITERS;
+        Thread[] people = new Thread[NUM_TOTAL];
 
-        for (int i = 0; i < NUM_READERS + NUM_WRITERS; i++) {
+        for (int i = 0; i < NUM_TOTAL; i++) {
             final boolean isWriter = (i < NUM_WRITERS);
             people[i] = new Thread(() -> {
                 try {
@@ -69,6 +70,14 @@ public class ReadersWriters {
             }, (isWriter ? "WRITER-" + i : "READER-" + i));
         }
 
+        for (int i = 0; i < NUM_TOTAL; i++) {
+            int num2change = ThreadLocalRandom.current().nextInt(NUM_TOTAL);
+            if (i != num2change) {
+                Thread tmp = people[num2change];
+                people[num2change] = people[i];
+                people[i] = tmp;
+            }
+        }
         for (Thread thread : people) {
             thread.start();
         }
